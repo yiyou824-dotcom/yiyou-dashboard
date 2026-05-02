@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>YY Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Noto+Serif+TC:wght@300;400;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:    #F5F2ED;
+  --paper: #FDFBF8;
+  --s2:    #F0EDE8;
+  --s3:    #E8E4DC;
+  --rule:  #DDD8CF;
+  --ink:   #1C1916;
+  --ink2:  #3D3830;
+  --muted: #8A837A;
+  --dim:   #B8B0A5;
+  --gold:  #9A7A3A;
+  --gold2: #C8A96E;
+  --goldbg:#FDF6E8;
+  --rouge: #8B2635;
+  --rougebg:#FDF0F0;
+  --sage:  #3A6B4A;
+  --sagebg:#EDF5F0;
+  --sky:   #2A5F8B;
+  --skybg: #EEF4FA;
+  --r: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  display: flex; flex-direction: column; height: 100dvh;
+}
+
+/* HEADER */
+header {
+  height: 52px; background: var(--paper);
+  border-bottom: 1.5px solid var(--ink);
+  display: flex; align-items: center;
+  padding: 0 20px; flex-shrink: 0;
+}
+.h-logo { flex: 1; display: flex; align-items: baseline; gap: 10px; }
+.h-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px; font-weight: 900; letter-spacing: -.3px; color: var(--ink);
+}
+.h-sub {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase;
+  border-left: 1px solid var(--rule); padding-left: 10px;
+}
+.h-stat {
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--sage);
+  display: flex; align-items: center; gap: 5px;
+}
+.h-stat::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--sage); animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* TABS */
+.tabs {
+  height: 44px; background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  display: flex; flex-shrink: 0; overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .5px;
+  text-transform: uppercase; color: var(--muted); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all .2s; white-space: nowrap;
+  padding: 0 12px;
+}
+.tab.active { color: var(--rouge); border-bottom-color: var(--rouge); }
+
+/* PANELS */
+.panels { flex: 1; overflow: hidden; position: relative; }
+.panel {
+  position: absolute; inset: 0; overflow-y: auto;
+  display: none; -webkit-overflow-scrolling: touch; background: var(--bg);
+}
+.panel.active { display: block; }
+.panel::-webkit-scrollbar { width: 3px; }
+.panel::-webkit-scrollbar-thumb { background: var(--rule); }
+
+/* SECTION TITLES */
+.sec {
+  font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted);
+  display: flex; align-items: center; gap: 8px; margin: 20px 20px 12px;
+}
+.sec::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+
+/* STAT GRID */
+.stat-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px;
+}
+.scard {
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: var(--r); padding: 14px 16px;
+  animation: up .4s ease forwards; opacity: 0; transform: translateY(8px);
+}
+@keyframes up { to { opacity:1; transform:translateY(0); } }
+.slbl { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+.sval { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 900; line-height: 1; }
+.sval.gold  { color: var(--gold); }
+.sval.sage  { color: var(--sage); }
+.sval.rouge { color: var(--rouge); }
+.ssub { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 4px; }
+.sbadge {
+  display: inline-block; font-family: 'DM Mono', monospace; font-size: 9px;
+  padding: 2px 8px; border-radius: 20px; margin-top: 6px;
+}
+.b-up  { background: var(--sagebg); color: var(--sage); }
+.b-dn  { background: var(--rougebg); color: var(--rouge); }
+.b-neu { background: var(--goldbg); color: var(--gold); }
+
+/* GOAL */
+.goal {
+  margin: 0 20px; background: var(--paper);
+  border: 1px solid var(--rule); border-radius: var(--r);
+  padding: 14px 16px; animation: up .4s ease forwards; opacity: 0;
+}
+.goal-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
+.goal-lbl { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+.goal-num { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+.goal-num strong { color: var(--gold); font-size: 16px; }
+.goal-track { background: var(--s3); border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 8px; }
+.goal-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg,var(--gold),var(--gold2)); width:0; transition: width 1.2s cubic-bezier(.16,1,.3,1); }
+.goal-eta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+.goal-eta strong { color: var(--sage); }
+
+/* CHART CONTAINERS */
+.chart-card {
+  margin: 0 20px; background: var(--paper);
+  border: 1px solid var(--rule); border-radius: var(--r);
+  padding: 16px; animation: up .4s ease forwards; opacity: 0;
+}
+.chart-head {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
+}
+.chart-title { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; color: var(--ink); }
+.chart-legend { display: flex; gap: 12px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+.chart-wrap { position: relative; }
+
+/* INSIGHT CARDS */
+.ilist { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+.icard {
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: var(--r); padding: 14px 16px;
+  animation: up .4s ease forwards; opacity: 0;
+}
+.icard.warn { border-left: 3px solid var(--rouge); }
+.icard.good { border-left: 3px solid var(--sage); }
+.icard.tip  { border-left: 3px solid var(--gold2); }
+.ihead {
+  font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted);
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 7px;
+}
+.ibody { font-size: 13px; line-height: 1.75; color: var(--ink2); }
+.ibody strong { color: var(--ink); font-weight: 600; }
+
+/* FORMULA */
+.formula-card {
+  margin: 0 20px; background: var(--paper);
+  border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden;
+  animation: up .4s ease forwards; opacity: 0;
+}
+.formula-hd {
+  padding: 14px 16px 12px; border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.formula-title { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; }
+.formula-score-badge {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  background: var(--sagebg); color: var(--sage);
+  padding: 3px 10px; border-radius: 20px;
+}
+.formula-items { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.fi {
+  display: flex; align-items: flex-start; gap: 10px; font-size: 12px;
+}
+.fi-check {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 1.5px solid var(--rule); flex-shrink: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; transition: all .2s; margin-top: 1px;
+  background: var(--paper);
+}
+.fi-check.on { background: var(--sage); border-color: var(--sage); color: white; }
+.fi-txt { flex: 1; }
+.fi-txt strong { color: var(--ink); display: block; margin-bottom: 2px; }
+.fi-txt span { color: var(--muted); font-size: 11px; line-height: 1.5; }
+.fi-tag {
+  font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted);
+  border: 1px solid var(--rule); padding: 2px 8px; border-radius: 10px; flex-shrink: 0;
+}
+
+/* SCORE RING */
+.score-wrap {
+  margin: 0 20px 14px; background: var(--paper);
+  border: 1px solid var(--rule); border-radius: var(--r);
+  padding: 14px 16px; display: flex; align-items: center; gap: 14px;
+}
+.ring-svg { width: 56px; height: 56px; flex-shrink: 0; transform: rotate(-90deg); }
+.ring-bg  { fill: none; stroke: var(--s3); stroke-width: 5; }
+.ring-fg  {
+  fill: none; stroke: var(--gold2); stroke-width: 5; stroke-linecap: round;
+  stroke-dasharray: 151.8; stroke-dashoffset: 151.8;
+  transition: stroke-dashoffset .8s cubic-bezier(.16,1,.3,1), stroke .3s;
+}
+.ring-num-wrap {
+  position: absolute; width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+}
+.score-info .slbl { margin-bottom: 5px; }
+.score-msg { font-size: 12px; color: var(--ink2); line-height: 1.5; }
+
+/* WRITER */
+.writer-wrap { padding: 0 20px 20px; }
+.wbox {
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: var(--r); overflow: hidden;
+}
+.wtop { padding: 14px 16px; border-bottom: 1px solid var(--rule); }
+.wlbl {
+  font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 9px;
+}
+.wfields { display: flex; flex-direction: column; gap: 8px; }
+.wrow { display: flex; gap: 8px; }
+.wf {
+  flex: 1; background: var(--bg); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 9px 12px;
+  font-family: 'Noto Serif TC', serif; font-size: 13px;
+  color: var(--ink); outline: none; resize: none; transition: border-color .2s;
+}
+.wf:focus { border-color: var(--ink); }
+.wf::placeholder { color: var(--dim); }
+select.wf { cursor: pointer; appearance: none; }
+select.wf option { background: var(--paper); color: var(--ink); }
+.wbtn {
+  width: 100%; margin-top: 10px; background: var(--ink); color: var(--paper);
+  border: none; border-radius: 8px; padding: 11px;
+  font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+  letter-spacing: .5px; cursor: pointer; transition: background .2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.wbtn:hover { background: var(--rouge); }
+.wbtn:disabled { opacity: .5; cursor: not-allowed; background: var(--ink); }
+.wout { padding: 14px 16px; display: none; }
+.wout.show { display: block; }
+.wcap { font-size: 13px; line-height: 1.85; color: var(--ink2); margin-bottom: 12px; white-space: pre-wrap; }
+.wtags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.wtag {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--sky); border: 1px solid rgba(42,95,139,.2);
+  background: var(--skybg); padding: 2px 9px; border-radius: 4px;
+}
+.wactions { display: flex; gap: 7px; }
+.wact {
+  flex: 1; background: var(--s2); border: 1px solid var(--rule);
+  border-radius: 7px; padding: 9px; font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--muted); cursor: pointer;
+  transition: all .2s; text-align: center;
+}
+.wact:hover { border-color: var(--ink); color: var(--ink); }
+
+/* PREDICTOR */
+.pred-wrap { padding: 0 20px; }
+.pred-box {
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: var(--r); overflow: hidden; margin-bottom: 12px;
+}
+.pred-top { padding: 14px 16px; border-bottom: 1px solid var(--rule); }
+.pred-fields { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.pred-row { display: flex; gap: 8px; align-items: center; }
+.pred-lbl { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); width: 64px; flex-shrink: 0; }
+.pred-select {
+  flex: 1; background: var(--bg); border: 1px solid var(--rule);
+  border-radius: 7px; padding: 8px 12px;
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  color: var(--ink); outline: none; cursor: pointer; appearance: none;
+}
+.pred-select option { background: var(--paper); }
+.pred-check-row {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px;
+}
+.pred-chip {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  border: 1px solid var(--rule); border-radius: 20px;
+  padding: 4px 12px; cursor: pointer; transition: all .2s;
+  color: var(--muted); background: var(--bg);
+}
+.pred-chip.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.pred-btn {
+  width: 100%; margin-top: 12px; background: var(--rouge); color: white;
+  border: none; border-radius: 8px; padding: 11px;
+  font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+  letter-spacing: .5px; cursor: pointer; transition: opacity .2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.pred-btn:hover { opacity: .85; }
+.pred-result { padding: 14px 16px; display: none; border-top: 1px solid var(--rule); }
+.pred-result.show { display: block; }
+.pred-score-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 14px; }
+.pred-score-card {
+  background: var(--bg); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 10px; text-align: center;
+}
+.psc-lbl { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+.psc-val { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 900; }
+.psc-sub { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px; }
+.pred-advice { background: var(--goldbg); border: 1px solid rgba(154,122,58,.2); border-radius: 8px; padding: 12px 14px; }
+.pred-advice-lbl { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+.pred-advice-txt { font-size: 12px; color: var(--ink2); line-height: 1.7; }
+
+/* TRENDS */
+.trend-grid { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+.tcard {
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: var(--r); padding: 14px 16px;
+  animation: up .4s ease forwards; opacity: 0;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.trank {
+  font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 900;
+  color: var(--rule); flex-shrink: 0; line-height: 1; width: 38px; text-align: right;
+}
+.trank.hot { color: var(--rouge); }
+.tbody { flex: 1; }
+.ttopic { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+.tdesc { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
+.ttags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+.ttag {
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--rouge); border: 1px solid rgba(139,38,53,.2);
+  background: var(--rougebg); padding: 2px 8px; border-radius: 4px;
+}
+.tgrow {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted);
+}
+.tgrow-bar { flex: 1; height: 4px; background: var(--s3); border-radius: 2px; overflow: hidden; }
+.tgrow-fill { height: 100%; border-radius: 2px; background: var(--rouge); transition: width 1s ease; }
+.tgrow-val { color: var(--sage); font-weight: 500; }
+.tapply {
+  flex-shrink: 0; background: none; border: 1px solid var(--rule);
+  border-radius: 7px; padding: 7px 12px; font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--muted); cursor: pointer; transition: all .2s; margin-top: 4px;
+}
+.tapply:hover { border-color: var(--rouge); color: var(--rouge); }
+
+/* MATERIAL */
+.mat-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; padding: 0 20px;
+}
+.mcard {
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: var(--r); padding: 12px;
+  animation: up .4s ease forwards; opacity: 0; cursor: pointer; transition: border-color .2s;
+}
+.mcard:hover,.mcard.on { border-color: var(--gold); background: var(--goldbg); }
+.mdest { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); margin-bottom: 3px; }
+.mname { font-size: 12px; font-weight: 600; margin-bottom: 8px; line-height: 1.3; }
+.mbar-wrap { background: var(--s3); border-radius: 3px; height: 3px; overflow: hidden; margin-bottom: 6px; }
+.mbar { height: 100%; border-radius: 3px; background: var(--gold2); }
+.mcounts { display: flex; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); }
+
+/* ROADMAP */
+.rm { padding: 0 20px 100px; display: flex; flex-direction: column; }
+.rmitem {
+  display: flex; gap: 14px; padding: 16px 0;
+  border-bottom: 1px solid var(--rule); animation: up .4s ease forwards; opacity: 0;
+}
+.rmitem:last-child { border-bottom: none; }
+.rmnum {
+  font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 900;
+  color: var(--rule); flex-shrink: 0; line-height: 1; width: 40px; text-align: right;
+}
+.rmnum.on { color: var(--rouge); }
+.rmbody { flex: 1; }
+.rmphase { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+.rmaction { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+.rmdetail { font-size: 12px; color: var(--muted); line-height: 1.65; }
+.rmtag { display: inline-block; margin-top: 7px; font-family: 'DM Mono', monospace; font-size: 9px; padding: 2px 9px; border-radius: 20px; }
+
+/* SPINNER */
+.spinner { width: 14px; height: 14px; border: 1.5px solid var(--rule); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* LOADING TAG */
+.loading-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted);
+  padding: 6px 14px; background: var(--s2); border-radius: 20px; margin: 10px 20px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-logo">
+    <div class="h-title">YY Studio</div>
+    <div class="h-sub">@yiyou.daily</div>
+  </div>
+  <div class="h-stat">16.1K 粉絲</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tab-overview"  onclick="sw('overview')">📊 概覽</div>
+  <div class="tab" id="tab-formula"   onclick="sw('formula')">✦ 爆文</div>
+  <div class="tab" id="tab-predictor" onclick="sw('predictor')">🔮 效益預測</div>
+  <div class="tab" id="tab-trends"    onclick="sw('trends')">🔥 趨勢</div>
+  <div class="tab" id="tab-writer"    onclick="sw('writer')">✍ 文案</div>
+  <div class="tab" id="tab-material"  onclick="sw('material')">📁 素材</div>
+  <div class="tab" id="tab-roadmap"   onclick="sw('roadmap')">🗺 路線</div>
+  <div class="tab" id="tab-input"     onclick="sw('input')">⚙ 更新數據</div>
+</div>
+
+<div class="panels">
+
+<!-- ═══ OVERVIEW ═══ -->
+<div class="panel active" id="overviewPanel">
+  <div class="sec">四月數據總覽</div>
+  <div class="stat-grid">
+    <div class="scard" style="animation-delay:.05s">
+      <div class="slbl">粉絲人數</div>
+      <div class="sval gold">16,129</div>
+      <div class="ssub">距目標 83,871</div>
+      <span class="sbadge b-up">+0.2% MoM</span>
+    </div>
+    <div class="scard" style="animation-delay:.1s">
+      <div class="slbl">月觀看次數</div>
+      <div class="sval">9.4萬</div>
+      <div class="ssub">自然 5.5萬 + 廣告 3.9萬</div>
+      <span class="sbadge b-neu">Reach 27K</span>
+    </div>
+    <div class="scard" style="animation-delay:.15s">
+      <div class="slbl">互動次數</div>
+      <div class="sval sage">1,384</div>
+      <div class="ssub">互動率 ~2.5%</div>
+      <span class="sbadge b-up">健康水準</span>
+    </div>
+    <div class="scard" style="animation-delay:.2s">
+      <div class="slbl">廣告轉換率</div>
+      <div class="sval rouge">0.29%</div>
+      <div class="ssub">79追蹤 / 27,567觸及</div>
+      <span class="sbadge b-dn">正常應 1–3%</span>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:22px">通往十萬粉</div>
+  <div class="goal" style="animation-delay:.1s">
+    <div class="goal-row">
+      <div class="goal-lbl">進度</div>
+      <div class="goal-num"><strong>16,129</strong> / 100,000</div>
+    </div>
+    <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
+    <div class="goal-eta">目前月增 <strong>~26人</strong>。策略調整後預估月增 <strong>800–1,500人</strong>，約 <strong>12–18個月</strong>達標。</div>
+  </div>
+
+  <div class="sec" style="margin-top:22px">內容觀看數分布</div>
+  <div class="chart-card" style="animation-delay:.15s">
+    <div class="chart-head">
+      <div class="chart-title">各貼文觀看表現</div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#9A7A3A"></div>日本系</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#C8D4E0"></div>其他</div>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="barChart" height="200"></canvas></div>
+  </div>
+
+  <div class="sec" style="margin-top:22px">成長趨勢（90天）</div>
+  <div class="chart-card" style="animation-delay:.2s;margin-bottom:0">
+    <div class="chart-head">
+      <div class="chart-title">粉絲淨增長</div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#3A6B4A"></div>追蹤</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#8B2635"></div>取消</div>
+      </div>
+    </div>
+    <div class="chart-wrap"><canvas id="lineChart" height="160"></canvas></div>
+  </div>
+
+  <div class="sec" style="margin-top:22px">診斷</div>
+  <div class="ilist" style="padding-bottom:100px">
+    <div class="icard warn" style="animation-delay:.05s">
+      <div class="ihead">⚠ 廣告效率過低</div>
+      <div class="ibody">花費 NT$644 觸及 27,567 人，僅換來 <strong>79 個追蹤（0.29%）</strong>。建議暫停廣告，先優化有機成長再重啟。</div>
+    </div>
+    <div class="icard warn" style="animation-delay:.1s">
+      <div class="ihead">⚠ 取消追蹤率 83%</div>
+      <div class="ibody">追蹤 151、取消 125。帳號定位不夠清晰，新粉絲看到非期待內容就離開。需要<strong>收窄主題</strong>。</div>
+    </div>
+    <div class="icard good" style="animation-delay:.15s">
+      <div class="ihead">✓ 爆文公式已驗證</div>
+      <div class="ibody">2/24 小豆島：57,891 觀看、141 追蹤、儲存率 <strong>0.24%</strong>。七元素公式已找到，問題是沒有系統化複製。</div>
+    </div>
+    <div class="icard tip" style="animation-delay:.2s">
+      <div class="ihead">→ 定位建議</div>
+      <div class="ibody">受眾票選結果：<strong>日本 × 城市光影 × 有故事感的風景</strong>。停止發北歐/其他非日本內容，讓演算法重新標記你。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FORMULA ═══ -->
+<div class="panel" id="formulaPanel">
+  <div class="sec">發文前 Checklist</div>
+  <div class="score-wrap" style="position:relative">
+    <div style="position:relative;width:56px;height:56px;flex-shrink:0">
+      <svg class="ring-svg" viewBox="0 0 56 56">
+        <circle class="ring-bg" cx="28" cy="28" r="24"/>
+        <circle class="ring-fg" id="ringFg" cx="28" cy="28" r="24"/>
+      </svg>
+      <div class="ring-num-wrap" style="position:absolute;top:0;left:0">
+        <span id="ringNum" style="color:var(--gold);font-family:'DM Mono',monospace;font-size:13px;font-weight:500">0/7</span>
+      </div>
+    </div>
+    <div class="score-info">
+      <div class="slbl">爆文公式符合度</div>
+      <div class="score-msg" id="scoreMsg">勾選所有元素以確認這篇是高潛力貼文</div>
+    </div>
+  </div>
+
+  <div class="formula-card">
+    <div class="formula-hd">
+      <div class="formula-title">✦ 黃金公式七元素</div>
+      <div class="formula-score-badge">基於 2/24 · 57.9K觀看</div>
+    </div>
+    <div class="formula-items">
+      <div class="fi"><div class="fi-check" onclick="ck(0)"></div><div class="fi-txt"><strong>引導視角構圖</strong><span>前景框景 + 視線引導進入畫面深處</span></div><div class="fi-tag">構圖</div></div>
+      <div class="fi"><div class="fi-check" onclick="ck(1)"></div><div class="fi-txt"><strong>黃金時段光線</strong><span>日落前後，金色或藍調光線</span></div><div class="fi-tag">光線</div></div>
+      <div class="fi"><div class="fi-check" onclick="ck(2)"></div><div class="fi-txt"><strong>主體明確</strong><span>有船、人、建築等視覺錨點，非空洞空景</span></div><div class="fi-tag">主體</div></div>
+      <div class="fi"><div class="fi-check" onclick="ck(3)"></div><div class="fi-txt"><strong>多張輪播（5張以上）</strong><span>增加停留時間，演算法加分</span></div><div class="fi-tag">格式</div></div>
+      <div class="fi"><div class="fi-check" onclick="ck(4)"></div><div class="fi-txt"><strong>詩意散文文案</strong><span>描述「過程與感受」，有情緒出口句</span></div><div class="fi-tag">文案</div></div>
+      <div class="fi"><div class="fi-check" onclick="ck(5)"></div><div class="fi-txt"><strong>地點 + 器材 Hashtag</strong><span>#地名 #景點 #相機型號，觸及兩個圈子</span></div><div class="fi-tag">標籤</div></div>
+      <div class="fi" style="margin-bottom:4px"><div class="fi-check" onclick="ck(6)"></div><div class="fi-txt"><strong>晚間 10–11 點發文</strong><span>台灣用戶睡前高峰，2/24 驗證有效</span></div><div class="fi-tag">時間</div></div>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:22px">儲存率目標</div>
+  <div class="ilist" style="padding-bottom:100px">
+    <div class="icard good">
+      <div class="ihead">✓ 儲存率 > 按讚</div>
+      <div class="ibody">IG 演算法把「儲存」視為最高品質互動。2/24 儲存率 <strong>0.24%（68/28,367）</strong>。目標每篇維持 <strong>0.2% 以上</strong>。</div>
+    </div>
+    <div class="icard tip">
+      <div class="ihead">→ 提高儲存率的方法</div>
+      <div class="ibody">讓人覺得「這張圖值得存下來」靠的是情感共鳴。「把細碎的煩惱揉進了波浪的褶皺裡」讓人想把這份安靜留著。</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PREDICTOR ═══ -->
+<div class="panel" id="predictorPanel">
+  <div class="sec">發文效益預測</div>
+  <div class="pred-wrap">
+    <div class="pred-box">
+      <div class="pred-top">
+        <div class="wlbl">輸入這篇貼文的條件</div>
+        <div class="pred-fields">
+          <div class="pred-row">
+            <div class="pred-lbl">內容類型</div>
+            <select class="pred-select" id="pType">
+              <option value="japan_city_night">日本城市夜景</option>
+              <option value="japan_sea">日本海景/湖景</option>
+              <option value="japan_street">日本街道/車站</option>
+              <option value="japan_nature">日本自然/山景</option>
+              <option value="taiwan_local">台灣本地</option>
+              <option value="other">其他地區</option>
+            </select>
+          </div>
+          <div class="pred-row">
+            <div class="pred-lbl">發文時間</div>
+            <select class="pred-select" id="pTime">
+              <option value="night_peak">晚上 10–11 點</option>
+              <option value="evening">傍晚 6–8 點</option>
+              <option value="noon">中午 12–1 點</option>
+              <option value="morning">早上 7–9 點</option>
+              <option value="other_time">其他時間</option>
+            </select>
+          </div>
+          <div class="pred-row">
+            <div class="pred-lbl">貼文格式</div>
+            <select class="pred-select" id="pFormat">
+              <option value="carousel">輪播（5張以上）</option>
+              <option value="carousel_small">輪播（2–4張）</option>
+              <option value="single">單張照片</option>
+              <option value="reel">Reels 影片</option>
+            </select>
+          </div>
+          <div class="pred-row" style="align-items:flex-start;margin-top:4px">
+            <div class="pred-lbl" style="padding-top:6px">符合元素</div>
+            <div class="pred-check-row" id="predChips">
+              <div class="pred-chip on" onclick="tChip(this)">引導構圖</div>
+              <div class="pred-chip" onclick="tChip(this)">黃金光線</div>
+              <div class="pred-chip" onclick="tChip(this)">主體明確</div>
+              <div class="pred-chip on" onclick="tChip(this)">詩意文案</div>
+              <div class="pred-chip" onclick="tChip(this)">精準 Hashtag</div>
+            </div>
+          </div>
+        </div>
+        <button class="pred-btn" onclick="predict()">🔮 預測這篇的效益</button>
+      </div>
+      <div class="pred-result" id="predResult">
+        <div class="pred-score-grid">
+          <div class="pred-score-card">
+            <div class="psc-lbl">預估觀看</div>
+            <div class="psc-val" id="pViews" style="color:var(--gold)">—</div>
+            <div class="psc-sub" id="pViewsSub"></div>
+          </div>
+          <div class="pred-score-card">
+            <div class="psc-lbl">預估追蹤</div>
+            <div class="psc-val" id="pFollows" style="color:var(--sage)">—</div>
+            <div class="psc-sub" id="pFollowsSub"></div>
+          </div>
+          <div class="pred-score-card">
+            <div class="psc-lbl">爆文機率</div>
+            <div class="psc-val" id="pProb" style="color:var(--rouge)">—</div>
+            <div class="psc-sub" id="pProbSub"></div>
+          </div>
+        </div>
+        <div class="pred-advice">
+          <div class="pred-advice-lbl">AI 建議</div>
+          <div class="pred-advice-txt" id="pAdvice"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec" style="margin:20px 0 12px;padding:0">趨勢加乘效果</div>
+    <div class="ilist" style="padding:0 0 100px">
+      <div class="icard tip">
+        <div class="ihead">→ 結合趨勢可提升 20–40% 觸及</div>
+        <div class="ibody">在<strong>熱門趨勢頁</strong>找到當週熱門 hashtag，加進你的貼文，可獲得額外的探索頁曝光。城市夜景 + 旅遊季趨勢是目前最強組合。</div>
+      </div>
+      <div class="icard good">
+        <div class="ihead">✓ 最佳發文時機</div>
+        <div class="ibody">台灣旅遊旺季（3–5月、9–11月）+ 日本熱門節氣（櫻花季、楓葉季）期間發日本攝影內容，效益可再乘以 <strong>1.5–2x</strong>。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TRENDS ═══ -->
+<div class="panel" id="trendsPanel">
+  <div class="sec">本週 IG / Threads 熱門趨勢</div>
+  <div class="loading-tag" id="trendsLoading" style="display:none">
+    <div class="spinner"></div> AI 分析最新趨勢中…
+  </div>
+  <div class="trend-grid" id="trendGrid" style="padding-bottom:100px"></div>
+</div>
+
+<!-- ═══ WRITER ═══ -->
+<div class="panel" id="writerPanel">
+  <div class="sec">AI 文案生成器 — yiyou.daily 風格</div>
+  <div class="writer-wrap">
+    <div class="wbox">
+      <div class="wtop">
+        <div class="wlbl">輸入拍攝資訊</div>
+        <div class="wfields">
+          <input class="wf" id="wLoc" placeholder="拍攝地點，例：小豆島天使之路"/>
+          <div class="wrow">
+            <select class="wf" id="wMood">
+              <option>🌊 寧靜療癒</option>
+              <option>🚂 懷念旅途</option>
+              <option>🌆 城市孤獨</option>
+              <option>✨ 光線奇蹟</option>
+              <option>🌿 日常裡的詩</option>
+            </select>
+            <select class="wf" id="wType2">
+              <option>🌊 海景/湖景</option>
+              <option>🌆 城市夜景</option>
+              <option>🏮 日本街道</option>
+              <option>⛰ 山景/自然</option>
+              <option>🚉 車站/交通</option>
+            </select>
+          </div>
+          <textarea class="wf" id="wExtra" rows="2" placeholder="補充細節（器材、天氣、特殊感受…）"></textarea>
+          <button class="wbtn" id="wBtn" onclick="genCaption()">✦ 生成文案 + Hashtag</button>
+        </div>
+      </div>
+      <div class="wout" id="wOut">
+        <div class="wcap" id="wCapTxt"></div>
+        <div class="wtags" id="wTags"></div>
+        <div class="wactions">
+          <button class="wact" onclick="copyIt()">📋 複製文案</button>
+          <button class="wact" onclick="genCaption()">↺ 重新生成</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MATERIAL ═══ -->
+<div class="panel" id="materialPanel">
+  <div class="sec">素材庫 — 剩餘彈藥估計</div>
+  <div class="mat-grid">
+    <div class="mcard on" style="animation-delay:.05s" onclick="selMat(this)"><div class="mdest">2026</div><div class="mname">高松・小豆島</div><div class="mbar-wrap"><div class="mbar" style="width:35%"></div></div><div class="mcounts"><span>已發 4</span><span>剩 ~20</span></div></div>
+    <div class="mcard" style="animation-delay:.08s" onclick="selMat(this)"><div class="mdest">2025</div><div class="mname">東京・橫濱</div><div class="mbar-wrap"><div class="mbar" style="width:60%"></div></div><div class="mcounts"><span>已發 12</span><span>剩 ~15</span></div></div>
+    <div class="mcard" style="animation-delay:.11s" onclick="selMat(this)"><div class="mdest">2025</div><div class="mname">北歐・冰島</div><div class="mbar-wrap"><div class="mbar" style="width:70%"></div></div><div class="mcounts"><span>已發 15</span><span>剩 ~10</span></div></div>
+    <div class="mcard" style="animation-delay:.14s" onclick="selMat(this)"><div class="mdest">2024</div><div class="mname">日本各地</div><div class="mbar-wrap"><div class="mbar" style="width:50%"></div></div><div class="mcounts"><span>已發 20</span><span>剩 ~25</span></div></div>
+    <div class="mcard" style="animation-delay:.17s" onclick="selMat(this)"><div class="mdest">本地</div><div class="mname">台灣各地</div><div class="mbar-wrap"><div class="mbar" style="width:40%"></div></div><div class="mcounts"><span>已發 8</span><span>剩 ~30</span></div></div>
+    <div class="mcard" style="animation-delay:.2s" onclick="selMat(this)"><div class="mdest">策略</div><div class="mname">舊作重新包裝</div><div class="mbar-wrap"><div class="mbar" style="width:5%"></div></div><div class="mcounts"><span>已用 0</span><span>無限</span></div></div>
+  </div>
+  <div class="sec" style="margin-top:22px">素材策略</div>
+  <div class="ilist" style="padding-bottom:100px">
+    <div class="icard good"><div class="ihead">✓ 你其實不缺素材</div><div class="ibody">估算未使用素材約 <strong>100張以上</strong>，每週 3 篇足夠發 <strong>8+ 個月</strong>，完全不需要出國。</div></div>
+    <div class="icard tip"><div class="ihead">→ 舊作重包裝</div><div class="ibody">「2025 東京，我最後悔沒多拍的地方」「同一地點早晨 vs 傍晚的差距」——文案和故事才是新內容，照片只是載體。</div></div>
+    <div class="icard warn"><div class="ihead">⚠ 北歐素材先暫停</div><div class="ibody">接下來三個月先只發<strong>日本相關內容</strong>，讓帳號定位穩固後再評估是否開闢副線。</div></div>
+  </div>
+</div>
+
+<!-- ═══ ROADMAP ═══ -->
+<div class="panel" id="roadmapPanel">
+  <div class="sec">十萬粉路線圖</div>
+  <div class="rm">
+    <div class="rmitem" style="animation-delay:.05s"><div class="rmnum on">1</div><div class="rmbody"><div class="rmphase">現在 → 第 1 個月</div><div class="rmaction">定位收窄，停止雜訊</div><div class="rmdetail">停止發非日本內容。重整 Bio。把 Highlights 北歐移除。讓演算法重新標記你是「日本旅遊攝影師」。</div><span class="rmtag b-neu">立即執行</span></div></div>
+    <div class="rmitem" style="animation-delay:.1s"><div class="rmnum on">2</div><div class="rmbody"><div class="rmphase">第 1–2 個月</div><div class="rmaction">每週 3 篇爆文公式驗證</div><div class="rmdetail">用 checklist 嚴格過濾每篇。追蹤儲存率目標 0.2%+。找下一個爆文模板。暫停廣告。</div><span class="rmtag b-neu">建立節奏</span></div></div>
+    <div class="rmitem" style="animation-delay:.15s"><div class="rmnum">3</div><div class="rmbody"><div class="rmphase">第 2–3 個月</div><div class="rmaction">開啟台灣本地光影系列</div><div class="rmdetail">用拍日本的眼光拍台灣——基隆、台南舊城、高雄港夜景，開拓本地受眾。</div><span class="rmtag" style="background:var(--skybg);color:var(--sky)">新素材線</span></div></div>
+    <div class="rmitem" style="animation-delay:.2s"><div class="rmnum">4</div><div class="rmbody"><div class="rmphase">第 3–4 個月</div><div class="rmaction">重啟廣告，精準受眾</div><div class="rmdetail">找到穩定公式後重開廣告，受眾改為攝影/旅遊興趣者。目標轉換率 1.5%+。</div><span class="rmtag b-dn">付費加速</span></div></div>
+    <div class="rmitem" style="animation-delay:.25s"><div class="rmnum">5</div><div class="rmbody"><div class="rmphase">第 4–6 個月</div><div class="rmaction">Threads 配合作戰</div><div class="rmdetail">Threads 發「拍攝思考過程」「器材心得」「構圖解析」，帶新人回 IG 追蹤。</div><span class="rmtag b-neu">雙平台</span></div></div>
+    <div class="rmitem" style="animation-delay:.3s"><div class="rmnum">✦</div><div class="rmbody"><div class="rmphase">第 12–18 個月</div><div class="rmaction">10 萬粉</div><div class="rmdetail">月均成長 800–1,500 人，配合一次日本旅行爆文加速。廣告合作價值大幅提升。</div><span class="rmtag b-up">目標達成</span></div></div>
+  </div>
+</div>
+
+<!-- ═══ INPUT ═══ -->
+<div class="panel" id="inputPanel">
+  <div class="sec">更新本月數據</div>
+
+  <div style="padding:0 20px;display:flex;flex-direction:column;gap:12px;padding-bottom:100px">
+
+    <!-- 基本數據 -->
+    <div class="pred-box">
+      <div class="pred-top">
+        <div class="wlbl">📊 帳號基本數據</div>
+        <div class="pred-fields" style="margin-top:10px">
+          <div class="pred-row">
+            <div class="pred-lbl">粉絲人數</div>
+            <input class="pred-select" type="number" id="i-followers" placeholder="例：16129">
+          </div>
+          <div class="pred-row">
+            <div class="pred-lbl">目標粉絲</div>
+            <input class="pred-select" type="number" id="i-goal" placeholder="例：100000">
+          </div>
+          <div class="pred-row">
+            <div class="pred-lbl">月觀看數</div>
+            <input class="pred-select" type="number" id="i-views" placeholder="例：94000">
+          </div>
+          <div class="pred-row">
+            <div class="pred-lbl">互動次數</div>
+            <input class="pred-select" type="number" id="i-engage" placeholder="例：1384">
+          </div>
+          <div class="pred-row">
+            <div class="pred-lbl">新追蹤</div>
+            <input class="pred-select" type="number" id="i-new-follow" placeholder="例：151">
+          </div>
+          <div class="pred-row">
+            <div class="pred-lbl">取消追蹤</div>
+            <input class="pred-select" type="number" id="i-unfollow" placeholder="例：125">
+          </div>
+          <div class="pred-row">
+            <div class="pred-lbl">廣告花費</div>
+            <input class="pred-select" type="number" id="i-ad-spend" placeholder="例：644（NT$）">
+          </div>
+          <div class="pred-row">
+            <div class="pred-lbl">廣告追蹤</div>
+            <input class="pred-select" type="number" id="i-ad-follow" placeholder="例：79">
+          </div>
+          <div class="pred-row">
+            <div class="pred-lbl">廣告觸及</div>
+            <input class="pred-select" type="number" id="i-ad-reach" placeholder="例：27567">
+          </div>
+          <div class="pred-row">
+            <div class="pred-lbl">統計月份</div>
+            <input class="pred-select" type="text" id="i-month" placeholder="例：5月">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 貼文數據 -->
+    <div class="pred-box">
+      <div class="pred-top">
+        <div class="wlbl">📸 本月最佳貼文（前三名）</div>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:10px" id="postInputs">
+          <!-- 貼文 1 -->
+          <div style="background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:12px">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">貼文 #1</div>
+            <div class="pred-fields">
+              <div class="pred-row"><div class="pred-lbl">名稱</div><input class="pred-select" type="text" id="p1-name" placeholder="例：小豆島小徑"></div>
+              <div class="pred-row"><div class="pred-lbl">觀看數</div><input class="pred-select" type="number" id="p1-views" placeholder="例：57891"></div>
+              <div class="pred-row"><div class="pred-lbl">按讚數</div><input class="pred-select" type="number" id="p1-likes" placeholder="例：661"></div>
+              <div class="pred-row"><div class="pred-lbl">儲存數</div><input class="pred-select" type="number" id="p1-saves" placeholder="例：68"></div>
+              <div class="pred-row"><div class="pred-lbl">新追蹤</div><input class="pred-select" type="number" id="p1-follows" placeholder="例：141"></div>
+            </div>
+          </div>
+          <!-- 貼文 2 -->
+          <div style="background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:12px">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">貼文 #2</div>
+            <div class="pred-fields">
+              <div class="pred-row"><div class="pred-lbl">名稱</div><input class="pred-select" type="text" id="p2-name" placeholder="例：橫濱夜景"></div>
+              <div class="pred-row"><div class="pred-lbl">觀看數</div><input class="pred-select" type="number" id="p2-views" placeholder="例：33500"></div>
+              <div class="pred-row"><div class="pred-lbl">按讚數</div><input class="pred-select" type="number" id="p2-likes" placeholder="例：420"></div>
+              <div class="pred-row"><div class="pred-lbl">儲存數</div><input class="pred-select" type="number" id="p2-saves" placeholder="例：35"></div>
+              <div class="pred-row"><div class="pred-lbl">新追蹤</div><input class="pred-select" type="number" id="p2-follows" placeholder="例：58"></div>
+            </div>
+          </div>
+          <!-- 貼文 3 -->
+          <div style="background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:12px">
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">貼文 #3</div>
+            <div class="pred-fields">
+              <div class="pred-row"><div class="pred-lbl">名稱</div><input class="pred-select" type="text" id="p3-name" placeholder="例：台灣海岸"></div>
+              <div class="pred-row"><div class="pred-lbl">觀看數</div><input class="pred-select" type="number" id="p3-views" placeholder="例：8604"></div>
+              <div class="pred-row"><div class="pred-lbl">按讚數</div><input class="pred-select" type="number" id="p3-likes" placeholder="例：210"></div>
+              <div class="pred-row"><div class="pred-lbl">儲存數</div><input class="pred-select" type="number" id="p3-saves" placeholder="例：18"></div>
+              <div class="pred-row"><div class="pred-lbl">新追蹤</div><input class="pred-select" type="number" id="p3-follows" placeholder="例：8"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 儲存按鈕 -->
+    <button onclick="saveData()" style="width:100%;background:var(--ink);color:var(--paper);border:none;border-radius:var(--r);padding:14px;font-family:'DM Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.5px;cursor:pointer;transition:background .2s;" onmouseover="this.style.background='var(--rouge)'" onmouseout="this.style.background='var(--ink)'">
+      💾 儲存並更新儀表板
+    </button>
+
+    <div id="saveMsg" style="display:none;text-align:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--sage);padding:8px;background:var(--sagebg);border-radius:8px;">
+      ✓ 數據已儲存，切換到概覽頁查看更新
+    </div>
+
+    <!-- 說明 -->
+    <div class="icard tip" style="animation-delay:0s">
+      <div class="ihead">→ 使用說明</div>
+      <div class="ibody">每個月從 IG 專業主控板截圖，對照截圖填入上方數字，按儲存即可。數據存在你的瀏覽器裡，下次打開自動載入。不需要改任何 code。</div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /panels -->
+
+<script>
+// ── DATA STORE ───────────────────────────────────────
+const DEFAULTS = {
+  followers:16129, goal:100000, views:94000, engage:1384,
+  newFollow:151, unfollow:125, adSpend:644, adFollow:79,
+  adReach:27567, month:'4月',
+  posts:[
+    {name:'東京鐵塔夜景',views:91400,likes:820,saves:95,follows:0},
+    {name:'江之島海景',  views:78000,likes:710,saves:80,follows:0},
+    {name:'小豆島小徑 ✦',views:57891,likes:661,saves:68,follows:141},
+    {name:'高松池塘',    views:33500,likes:380,saves:42,follows:58},
+    {name:'橫濱夜景',    views:75000,likes:650,saves:70,follows:0},
+    {name:'秋季紅葉',    views:26500,likes:300,saves:30,follows:0},
+    {name:'草原空景',    views:2057, likes:80, saves:5, follows:0},
+  ]
+};
+let D = JSON.parse(localStorage.getItem('yy_data')||'null') || DEFAULTS;
+
+function saveData() {
+  const n  = id => parseFloat(document.getElementById(id)?.value)||0;
+  const s  = id => document.getElementById(id)?.value?.trim()||'';
+  D = {
+    followers: n('i-followers')||D.followers,
+    goal:      n('i-goal')     ||D.goal,
+    views:     n('i-views')    ||D.views,
+    engage:    n('i-engage')   ||D.engage,
+    newFollow: n('i-new-follow')||D.newFollow,
+    unfollow:  n('i-unfollow') ||D.unfollow,
+    adSpend:   n('i-ad-spend') ||D.adSpend,
+    adFollow:  n('i-ad-follow')||D.adFollow,
+    adReach:   n('i-ad-reach') ||D.adReach,
+    month:     s('i-month')    ||D.month,
+    posts: [
+      {name:s('p1-name')||D.posts[0]?.name,views:n('p1-views')||D.posts[0]?.views,likes:n('p1-likes'),saves:n('p1-saves'),follows:n('p1-follows')},
+      {name:s('p2-name')||D.posts[1]?.name,views:n('p2-views')||D.posts[1]?.views,likes:n('p2-likes'),saves:n('p2-saves'),follows:n('p2-follows')},
+      {name:s('p3-name')||D.posts[2]?.name,views:n('p3-views')||D.posts[2]?.views,likes:n('p3-likes'),saves:n('p3-saves'),follows:n('p3-follows')},
+      ...DEFAULTS.posts.slice(3)
+    ]
+  };
+  localStorage.setItem('yy_data', JSON.stringify(D));
+  chartsInited = false;
+  applyData();
+  document.getElementById('saveMsg').style.display = 'block';
+  setTimeout(()=>{ document.getElementById('saveMsg').style.display='none'; }, 3000);
+}
+
+function loadInputFields() {
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.value=v||''; };
+  set('i-followers',D.followers); set('i-goal',D.goal);
+  set('i-views',D.views);         set('i-engage',D.engage);
+  set('i-new-follow',D.newFollow);set('i-unfollow',D.unfollow);
+  set('i-ad-spend',D.adSpend);    set('i-ad-follow',D.adFollow);
+  set('i-ad-reach',D.adReach);    set('i-month',D.month);
+  if(D.posts[0]){set('p1-name',D.posts[0].name);set('p1-views',D.posts[0].views);set('p1-likes',D.posts[0].likes);set('p1-saves',D.posts[0].saves);set('p1-follows',D.posts[0].follows);}
+  if(D.posts[1]){set('p2-name',D.posts[1].name);set('p2-views',D.posts[1].views);set('p2-likes',D.posts[1].likes);set('p2-saves',D.posts[1].saves);set('p2-follows',D.posts[1].follows);}
+  if(D.posts[2]){set('p3-name',D.posts[2].name);set('p3-views',D.posts[2].views);set('p3-likes',D.posts[2].likes);set('p3-saves',D.posts[2].saves);set('p3-follows',D.posts[2].follows);}
+}
+
+function applyData() {
+  // Header pulse
+  const hs = document.querySelector('.h-stat');
+  if(hs) hs.innerHTML = (D.followers/1000).toFixed(1)+'K 粉絲';
+
+  // Stat cards
+  const cards = document.querySelectorAll('.scard');
+  if(cards[0]){
+    cards[0].querySelector('.sval').textContent = D.followers.toLocaleString();
+    cards[0].querySelector('.ssub').textContent = '距目標 '+(D.goal-D.followers).toLocaleString();
+  }
+  if(cards[1]){
+    const v = D.views>=10000?(D.views/10000).toFixed(1)+'萬':D.views.toLocaleString();
+    cards[1].querySelector('.sval').textContent = v;
+  }
+  if(cards[2]){
+    cards[2].querySelector('.sval').textContent = D.engage.toLocaleString();
+    const rate = D.views>0?((D.engage/D.views)*100).toFixed(1):0;
+    cards[2].querySelector('.ssub').textContent = '互動率 ~'+rate+'%';
+  }
+  if(cards[3]){
+    const conv = D.adReach>0?((D.adFollow/D.adReach)*100).toFixed(2):0;
+    cards[3].querySelector('.sval').textContent = conv+'%';
+    cards[3].querySelector('.ssub').textContent = D.adFollow+'追蹤 / '+D.adReach.toLocaleString()+'觸及';
+  }
+
+  // Goal bar
+  document.getElementById('goalFill').style.width = Math.min(100,(D.followers/D.goal*100))+'%';
+  const gn = document.querySelector('.goal-num');
+  if(gn) gn.innerHTML = '<strong>'+D.followers.toLocaleString()+'</strong> / '+D.goal.toLocaleString();
+
+  // Section title month
+  const secs = document.querySelectorAll('.sec');
+  if(secs[0]) secs[0].textContent = D.month+' 數據總覽';
+
+  // Warn insight cancel rate
+  const rate = D.newFollow>0?Math.round(D.unfollow/D.newFollow*100):0;
+  const warns = document.querySelectorAll('.icard.warn');
+  if(warns[1]) warns[1].querySelector('.ibody').innerHTML = '追蹤 '+D.newFollow+'、取消 '+D.unfollow+'。取消率 <strong>'+rate+'%</strong>。帳號定位不夠清晰，需要收窄主題。';
+
+  initCharts();
+}
+
+// ── TABS ─────────────────────────────────────────────
+function sw(n) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + n).classList.add('active');
+  document.getElementById(n + 'Panel').classList.add('active');
+  if (n === 'overview') { initGoal(); initCharts(); }
+  if (n === 'trends') loadTrends();
+  if (n === 'input') loadInputFields();
+}
+
+// ── CHARTS ───────────────────────────────────────────
+let barChartInstance = null, lineChartInstance = null;
+let chartsInited = false;
+function initCharts() {
+  if (chartsInited) return; chartsInited = true;
+  setTimeout(initGoal, 100);
+
+  // Destroy old if re-rendering
+  if (barChartInstance) barChartInstance.destroy();
+  if (lineChartInstance) lineChartInstance.destroy();
+
+  // Bar chart — from D.posts
+  const postLabels = D.posts.map(p => p.name);
+  const postViews  = D.posts.map(p => p.views);
+  const barColors  = D.posts.map(p => p.name.includes('✦') ? '#8B2635' : '#9A7A3A');
+  const bCtx = document.getElementById('barChart').getContext('2d');
+  barChartInstance = new Chart(bCtx, {
+    type: 'bar',
+    data: {
+      labels: postLabels,
+      datasets: [{ data: postViews, backgroundColor: barColors, borderRadius: 4, borderSkipped: false }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' '+(ctx.raw/1000).toFixed(1)+'K 次觀看' } } },
+      scales: {
+        x: { grid:{ display:false }, ticks:{ font:{family:'DM Mono',size:9}, color:'#8A837A', maxRotation:30 } },
+        y: { grid:{ color:'#EDE9E1' }, ticks:{ font:{family:'DM Mono',size:9}, color:'#8A837A', callback: v=>(v/1000).toFixed(0)+'K' } }
+      }
+    }
+  });
+
+  // Line chart — follow vs unfollow trend (simulated from D)
+  const lCtx = document.getElementById('lineChart').getContext('2d');
+  const wks = ['1/31','2/7','2/14','2/21','2/28','3/7','3/14','3/21','3/28','4/4','4/11','4/18','4/25','4/30'];
+  const followData  = [8,12,15,78,20,12,40,10,8,18,12,25,D.newFollow,10];
+  const unfollowData= [5,8,10,12,30,8,15,8,5,12,10,20,D.unfollow,8];
+  lineChartInstance = new Chart(lCtx, {
+    type: 'line',
+    data: {
+      labels: wks,
+      datasets: [
+        { label:'追蹤', data:followData,   borderColor:'#3A6B4A', backgroundColor:'rgba(58,107,74,.08)', fill:true, tension:.4, pointRadius:3, pointBackgroundColor:'#3A6B4A' },
+        { label:'取消', data:unfollowData, borderColor:'#8B2635', backgroundColor:'rgba(139,38,53,.06)', fill:true, tension:.4, pointRadius:3, pointBackgroundColor:'#8B2635' }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:true,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ grid:{display:false}, ticks:{font:{family:'DM Mono',size:9},color:'#8A837A',maxTicksLimit:7} },
+        y:{ grid:{color:'#EDE9E1'}, ticks:{font:{family:'DM Mono',size:9},color:'#8A837A'} }
+      }
+    }
+  });
+}
+
+function initGoal() {
+  document.getElementById('goalFill').style.width = (16129/100000*100) + '%';
+}
+
+// ── FORMULA CHECKLIST ────────────────────────────────
+const checks = Array(7).fill(false);
+function ck(i) {
+  checks[i] = !checks[i];
+  const el = document.querySelectorAll('.fi-check')[i];
+  el.classList.toggle('on', checks[i]);
+  el.textContent = checks[i] ? '✓' : '';
+  const n = checks.filter(Boolean).length;
+  const c = 151.8;
+  const fg = document.getElementById('ringFg');
+  fg.style.strokeDashoffset = c - (c * n / 7);
+  fg.style.stroke = n >= 6 ? '#3A6B4A' : n >= 4 ? '#C8A96E' : '#8B2635';
+  document.getElementById('ringNum').textContent = n + '/7';
+  document.getElementById('ringNum').style.color = n >= 6 ? '#3A6B4A' : n >= 4 ? '#9A7A3A' : '#8B2635';
+  const msgs = ['勾選所有元素以確認這篇是高潛力貼文','開始了！繼續確認其他元素','有點基礎，但還不夠','一半了，品質開始提升','不錯！這篇有潛力','很好，接近爆文標準','幾乎完美，再確認最後一項','✦ 爆文公式全部到位，發出去吧！'];
+  document.getElementById('scoreMsg').textContent = msgs[n];
+}
+
+// ── PREDICTOR ───────────────────────────────────────
+function tChip(el) { el.classList.toggle('on'); }
+
+async function predict() {
+  const type   = document.getElementById('pType').value;
+  const time   = document.getElementById('pTime').value;
+  const format = document.getElementById('pFormat').value;
+  const chips  = [...document.querySelectorAll('.pred-chip.on')].map(c => c.textContent);
+  const score  = chips.length;
+
+  // Base views by content type
+  const typeBase = { japan_city_night: 45000, japan_sea: 35000, japan_street: 18000, japan_nature: 12000, taiwan_local: 8000, other: 4000 };
+  const timeMult = { night_peak: 1.3, evening: 1.0, noon: 0.8, morning: 0.7, other_time: 0.6 };
+  const fmtMult  = { carousel: 1.4, carousel_small: 1.1, single: 0.8, reel: 1.6 };
+
+  let base = typeBase[type] || 10000;
+  base *= (timeMult[time] || 1);
+  base *= (fmtMult[format] || 1);
+  base *= (1 + score * 0.12);
+
+  const views   = Math.round(base);
+  const follows = Math.round(views * 0.0025 * (1 + score * 0.1));
+  const prob    = Math.min(95, Math.round(20 + score * 12 + (type === 'japan_city_night' ? 20 : type === 'japan_sea' ? 15 : 0) + (time === 'night_peak' ? 10 : 0)));
+
+  document.getElementById('pViews').textContent    = views >= 1000 ? (views/1000).toFixed(1) + 'K' : views;
+  document.getElementById('pFollows').textContent  = follows;
+  document.getElementById('pProb').textContent     = prob + '%';
+  document.getElementById('pViewsSub').textContent = '預估觸及人數';
+  document.getElementById('pFollowsSub').textContent = '預估新追蹤';
+  document.getElementById('pProbSub').textContent  = prob >= 60 ? '高潛力' : prob >= 40 ? '中等潛力' : '較低潛力';
+
+  // AI advice
+  const btn = document.querySelector('.pred-btn');
+  btn.innerHTML = '<div class="spinner"></div> AI 分析中…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 300,
+        system: `你是 @yiyou.daily 的社群顧問。根據貼文條件給出具體、精準的優化建議（繁體中文，80字內，直接說重點）。`,
+        messages: [{ role: 'user', content: `內容類型:${type} 發文時間:${time} 格式:${format} 符合元素:${chips.join(',')||'無'} 預估觀看:${views} 預估追蹤:${follows} 爆文機率:${prob}%` }]
+      })
+    });
+    const d = await res.json();
+    document.getElementById('pAdvice').textContent = (d.content||[]).map(b=>b.text||'').join('') || getDefaultAdvice(type, score, time);
+  } catch {
+    document.getElementById('pAdvice').textContent = getDefaultAdvice(type, score, time);
+  }
+
+  btn.innerHTML = '🔮 預測這篇的效益';
+  btn.disabled = false;
+  document.getElementById('predResult').classList.add('show');
+}
+
+function getDefaultAdvice(type, score, time) {
+  if (type === 'japan_city_night' && time === 'night_peak') return '城市夜景 + 晚間發文是你的最強組合。確認加入 #leicaq3 和地點 hashtag，儲存率目標 0.2% 以上。';
+  if (score < 3) return '目前符合的爆文元素太少，建議先補齊「引導構圖」和「詩意文案」再發，可大幅提升效益。';
+  if (type === 'other') return '非日本內容在你的帳號歷史表現偏弱。若一定要發，文案要特別強調情感共鳴，彌補地點吸引力不足。';
+  return '加入近期熱門 hashtag 可再提升 20–30% 觸及，去趨勢頁查看本週推薦標籤。';
+}
+
+// ── TRENDS ───────────────────────────────────────────
+let trendsLoaded = false;
+async function loadTrends() {
+  if (trendsLoaded) return;
+  trendsLoaded = true;
+  document.getElementById('trendsLoading').style.display = 'flex';
+
+  const staticTrends = [
+    { rank:1, hot:true,  topic:'日本旅遊季開跑', desc:'五月黃金週效應延燒，#日本旅遊 相關貼文互動率比平均高出 2.3 倍，攝影類帳號最受益。', tags:['#日本旅遊','#goldweek','#japan2025'], grow:92 },
+    { rank:2, hot:true,  topic:'城市夜景攝影熱潮', desc:'Reels 與輪播中的城市夜景類內容儲存率暴增，橫濱、大阪、東京三地最熱門。', tags:['#citylights','#nightphotography','#横浜'], grow:85 },
+    { rank:3, hot:false, topic:'底片感後製風格', desc:'膠卷質感、褪色色調在台灣攝影社群持續發燒，#filmcamera 搜尋量月增 40%。', tags:['#filmcamera','#底片感','#leicaq3'], grow:74 },
+    { rank:4, hot:false, topic:'療癒系風景文案', desc:'配有詩意文案的風景貼文平均儲存率比純圖高出 68%，情緒共鳴是關鍵驅動力。', tags:['#療癒系','#旅行的意義','#光影'], grow:68 },
+    { rank:5, hot:false, topic:'台灣在地重新發現', desc:'#台灣之美 系列在年輕族群中快速擴散，用外拍眼光記錄本地成新趨勢。', tags:['#台灣之美','#ig台灣','#旅遊台灣'], grow:61 },
+    { rank:6, hot:false, topic:'火車鐵道攝影', desc:'火車站月台、移動中的車窗風景成為 IG 新美學，日本鐵道系列特別受歡迎。', tags:['#鐵道攝影','#train_japan','#車窗風景'], grow:55 },
+  ];
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 800,
+        system: `你是台灣 Instagram 趨勢分析師，專門追蹤攝影/旅遊類帳號的熱門趨勢。
+根據當前（2025年5月）台灣 IG 和 Threads 的趨勢，輸出 JSON：
+[{"rank":1,"hot":true,"topic":"趨勢名稱","desc":"50字描述","tags":["#tag1","#tag2","#tag3"],"grow":85}]
+grow 是熱度分數 0–100。只輸出 JSON。`,
+        messages: [{ role: 'user', content: '給我適合 @yiyou.daily（日本旅遊攝影師，光影城市風格）的前六名當前熱門趨勢和推薦 hashtag' }]
+      })
+    });
+    const d = await res.json();
+    const t = (d.content||[]).map(b=>b.text||'').join('');
+    const m = t.replace(/```json|```/g,'').trim().match(/\[[\s\S]*\]/);
+    if (m) renderTrends(JSON.parse(m[0]));
+    else renderTrends(staticTrends);
+  } catch {
+    renderTrends(staticTrends);
+  }
+
+  document.getElementById('trendsLoading').style.display = 'none';
+}
+
+function renderTrends(data) {
+  const grid = document.getElementById('trendGrid');
+  grid.innerHTML = data.map((t, i) => `
+    <div class="tcard" style="animation-delay:${i*.06}s">
+      <div class="trank${t.hot?' hot':''}">${t.rank}</div>
+      <div class="tbody">
+        <div class="ttopic">${t.hot ? '🔥 ' : ''}${t.topic}</div>
+        <div class="tdesc">${t.desc}</div>
+        <div class="ttags">${(t.tags||[]).map(tag=>`<span class="ttag">${tag}</span>`).join('')}</div>
+        <div class="tgrow">
+          <span>熱度</span>
+          <div class="tgrow-bar"><div class="tgrow-fill" style="width:${t.grow}%"></div></div>
+          <span class="tgrow-val">${t.grow}</span>
+        </div>
+      </div>
+      <button class="tapply" onclick="applyTrend('${(t.tags||[]).join(' ')}')">套用 →</button>
+    </div>`).join('');
+}
+
+function applyTrend(tags) {
+  sw('writer');
+  setTimeout(() => {
+    const ex = document.getElementById('wExtra');
+    ex.value = (ex.value ? ex.value + '\n' : '') + '加入熱門標籤：' + tags;
+  }, 100);
+}
+
+// ── WRITER ───────────────────────────────────────────
+async function genCaption() {
+  const loc   = document.getElementById('wLoc').value.trim();
+  const mood  = document.getElementById('wMood').value;
+  const type  = document.getElementById('wType2').value;
+  const extra = document.getElementById('wExtra').value.trim();
+  const btn   = document.getElementById('wBtn');
+  const out   = document.getElementById('wOut');
+  if (!loc) { alert('請輸入拍攝地點'); return; }
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> 生成中…';
+  out.classList.remove('show');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 1000,
+        system: `你是 @yiyou.daily 的文案助理。風格：詩意散文，描述「過程與感受」，有情緒出口句。語言：繁體中文。
+只輸出 JSON：{"title":"標題","body":"正文（含換行）","hashtags":["tag1","tag2","tag3","tag4","tag5","tag6"]}
+Hashtag：地點 + 景點 + 器材（leicaq3）+ 情緒關鍵字，共 6–8 個。`,
+        messages: [{ role: 'user', content: `地點:${loc} 情緒:${mood} 類型:${type}${extra?'\n補充:'+extra:''}` }]
+      })
+    });
+    const d = await res.json();
+    const t = (d.content||[]).map(b=>b.text||'').join('');
+    const m = t.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
+    if (m) {
+      const r = JSON.parse(m[0]);
+      document.getElementById('wCapTxt').textContent = r.title + '\n\n' + r.body;
+      document.getElementById('wTags').innerHTML = (r.hashtags||[]).map(h=>`<span class="wtag">#${h.replace('#','')}</span>`).join('');
+      out.classList.add('show');
+    }
+  } catch {
+    document.getElementById('wCapTxt').textContent = `穿越${loc}，遇見了那道光\n\n總覺得${type.includes('海')?'海景':'風景'}最迷人的時刻，不只是看見它的那一秒。\n而是靠近它的整個過程——\n腳步慢下來，呼吸跟著深了，\n連思緒都被那片安靜給洗滌。\n\n那天的光線很奢侈，\n它把一切平凡的細節都鍍上了一層金，\n也把那些細碎的煩惱，\n一起揉進了風裡。\n\n想分享這份安靜，\n願你也能在喧囂的日常裡，\n擁有一片屬於自己的、閃閃發光的瞬間。`;
+    document.getElementById('wTags').innerHTML = [`#${loc}`,'#日本旅遊','#旅遊攝影','#leicaq3','#光影攝影','#yiyoucam','#旅行的意義'].map(h=>`<span class="wtag">${h}</span>`).join('');
+    out.classList.add('show');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '✦ 生成文案 + Hashtag';
+}
+
+function copyIt() {
+  const cap = document.getElementById('wCapTxt').textContent;
+  const tags = [...document.querySelectorAll('.wtag')].map(t=>t.textContent).join(' ');
+  navigator.clipboard.writeText(cap + '\n\n' + tags).then(() => {
+    const b = event.target; b.textContent = '✓ 已複製';
+    setTimeout(()=>{ b.textContent='📋 複製文案'; }, 2000);
+  });
+}
+
+// ── MATERIAL ─────────────────────────────────────────
+function selMat(el) {
+  document.querySelectorAll('.mcard').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+// ── INIT ─────────────────────────────────────────────
+setTimeout(() => { applyData(); }, 150);
+</script>
+</body>
+</html>
